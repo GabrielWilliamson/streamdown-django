@@ -36,6 +36,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 COPY manage.py uwsgi.ini ./
 COPY config/ ./config/
 COPY chat/ ./chat/
@@ -46,4 +48,4 @@ RUN uv run python manage.py collectstatic --noinput
 
 EXPOSE 8000/tcp
 
-CMD ["uwsgi", "--show-config"]
+CMD ["uwsgi", "--ini", "uwsgi.ini"]
