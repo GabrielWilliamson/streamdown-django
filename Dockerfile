@@ -43,8 +43,7 @@ COPY --from=frontend /app/static/frontend ./static/frontend
 
 RUN uv run python manage.py collectstatic --noinput
 
-ENV PATH="/app/.venv/bin:$PATH"
 
-EXPOSE 8080
+EXPOSE 8000/tcp
 
-CMD ["uwsgi", "--ini", "/app/uwsgi.ini"]
+CMD ["uwsgi", "--show-config"]
