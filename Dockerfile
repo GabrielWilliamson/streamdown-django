@@ -17,7 +17,7 @@ FROM python:3.13-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8080 \
+    PORT=8000 \
     DJANGO_SETTINGS_MODULE=config.settings \
     DEBUG=false \
     SECURE_SSL_REDIRECT=false
