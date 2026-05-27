@@ -1,0 +1,16 @@
+.venv
+.git
+.env
+.env.*
+!.env.example
+__pycache__
+*.py[cod]
+db.sqlite3
+frontent/node_modules
+frontent/dist
+static/frontend
+staticfiles
+*.md
+.cursor
+agent-tools
+agent-transcripts
