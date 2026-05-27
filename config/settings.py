@@ -1,30 +1,12 @@
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / ".env")
-
-DEBUG = os.getenv("DEBUG", "true").lower() in {"1", "true", "yes"}
-
-SECRET_KEY = os.getenv(
-    "SECRET_KEY",
-    "django-insecure-dev-only-change-in-production",
-)
-
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
+DEBUG = False
+ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 OPENAI_API_KEY = os.getenv("OPENAI") or os.getenv("OPENAI_API_KEY")
 
@@ -40,7 +22,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
-
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
@@ -66,13 +47,4 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "false").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
