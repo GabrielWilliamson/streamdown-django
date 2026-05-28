@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import time
 
 from django.conf import settings
 from django.http import FileResponse, JsonResponse, StreamingHttpResponse
@@ -27,6 +28,7 @@ def _openai_text_stream(user_message: str):
         )
         for event in stream:
             if event.type == "response.output_text.delta" and event.delta:
+                time.sleep(0.1)
                 yield _sse_data({"delta": event.delta})
     except Exception as exc:
         yield _sse_data({"error": str(exc)})
@@ -63,6 +65,7 @@ def chat_stream(request):
     message = (body.get("message") or "").strip()
     if not message:
         return JsonResponse({"error": "Message is required"}, status=400)
+
 
     response = StreamingHttpResponse(
         _openai_text_stream(message),
