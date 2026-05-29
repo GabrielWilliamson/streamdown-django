@@ -9,10 +9,15 @@ from django.views.decorators.http import require_POST
 from google import genai
 
 
+_CLIENT = None
+
 def _get_client() -> genai.Client:
-    if not settings.GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set in .env")
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+    global _CLIENT
+    if _CLIENT is None:
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in .env")
+        _CLIENT = genai.Client(api_key=settings.GEMINI_API_KEY)
+    return _CLIENT
 
 
 def _sse_data(payload: dict) -> str:
@@ -30,7 +35,7 @@ def generate_completion(user_prompt: str):
         try:
             client = _get_client()
             stream = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
+                model="gemini-2.0-flash",
                 contents=user_prompt,
             )
             for chunk in stream:
