@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
