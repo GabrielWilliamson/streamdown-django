@@ -28,7 +28,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.gzip.GZipMiddleware",
+    "chat.middleware.SkipGZipSSEMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
