@@ -1,40 +1,71 @@
 import json
+from collections.abc import Iterator
 from pathlib import Path
-import time
 
 from django.conf import settings
 from django.http import FileResponse, JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from openai import OpenAI
+from google import genai
 
 
-def _get_client() -> OpenAI:
-    if not settings.OPENAI_API_KEY:
-        raise ValueError("OPENAI is not set in .env")
-    return OpenAI(api_key=settings.OPENAI_API_KEY)
+def _get_client() -> genai.Client:
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set in .env")
+    return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
 def _sse_data(payload: dict) -> str:
     return f"data: {json.dumps(payload)}\n\n"
 
 
-def _openai_text_stream(user_message: str):
-    try:
-        stream = _get_client().responses.create(
-            model="gpt-4o-mini",
-            input=user_message,
-            stream=True,
-        )
-        for event in stream:
-            if event.type == "response.output_text.delta" and event.delta:
-                time.sleep(0.1)
-                yield _sse_data({"delta": event.delta})
-    except Exception as exc:
-        yield _sse_data({"error": str(exc)})
-        return
+def generate_completion(user_prompt: str):
+    """
+    Returns the generator function that streams SSE chunks from Gemini.
+    """
 
-    yield "data: [DONE]\n\n"
+    def complete_with_gemini() -> Iterator[str]:
+        yield ": connected\n\n"
+
+        try:
+            client = _get_client()
+            stream = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=user_prompt,
+            )
+            for chunk in stream:
+                text = chunk.text
+                if text:
+                    yield _sse_data({"delta": text})
+        except Exception as exc:
+            yield _sse_data({"error": str(exc)})
+            return
+
+        yield "data: [DONE]\n\n"
+
+    return complete_with_gemini
+
+
+@csrf_exempt
+@require_POST
+def chat_stream(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    message = (body.get("message") or "").strip()
+    if not message:
+        return JsonResponse({"error": "Message is required"}, status=400)
+
+    completion_func = generate_completion(message)
+    response = StreamingHttpResponse(
+        completion_func(),
+        content_type="text/event-stream",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 def _spa_index_path() -> Path:
@@ -52,25 +83,3 @@ def spa_index(request):
             status=503,
         )
     return FileResponse(index_path.open("rb"), content_type="text/html")
-
-
-@csrf_exempt
-@require_POST
-def chat_stream(request):
-    try:
-        body = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-    message = (body.get("message") or "").strip()
-    if not message:
-        return JsonResponse({"error": "Message is required"}, status=400)
-
-
-    response = StreamingHttpResponse(
-        _openai_text_stream(message),
-        content_type="text/event-stream",
-    )
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response

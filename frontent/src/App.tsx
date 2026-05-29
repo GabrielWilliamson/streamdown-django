@@ -35,7 +35,7 @@ function parseSseLine(
 
 function TypingIndicator() {
   return (
-    <span className="inline-flex items-center gap-1 px-0.5" aria-label="Escribiendo">
+    <span className="inline-flex items-center gap-1 px-0.5">
       <span className="typing-dot size-1.5 rounded-full bg-zinc-400" />
       <span className="typing-dot size-1.5 rounded-full bg-zinc-400" />
       <span className="typing-dot size-1.5 rounded-full bg-zinc-400" />
@@ -108,30 +108,40 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
       let buffer = '';
 
+      const applySseLine = (line: string) => {
+        parseSseLine(
+          line,
+          (delta) => {
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantId
+                  ? { ...message, content: message.content + delta }
+                  : message,
+              ),
+            );
+          },
+          (errorMessage) => {
+            throw new Error(errorMessage);
+          },
+        );
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          parseSseLine(
-            line,
-            (delta) => {
-              setMessages((prev) =>
-                prev.map((message) =>
-                  message.id === assistantId
-                    ? { ...message, content: message.content + delta }
-                    : message,
-                ),
-              );
-            },
-            (errorMessage) => {
-              throw new Error(errorMessage);
-            },
-          );
+          for (const line of lines) {
+            applySseLine(line);
+          }
+        }
+        if (done) {
+          if (buffer.trim()) {
+            applySseLine(buffer);
+          }
+          break;
         }
       }
     } catch (error) {
